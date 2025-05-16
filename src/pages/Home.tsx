@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { CalendarPlus, Users, Calendar, MapPin } from "lucide-react";
+import { CalendarPlus, Users, Calendar, MapPin, IndianRupee } from "lucide-react";
 import { Event } from "@/models/types";
 import { eventsAPI } from "@/services/api";
 import { format } from "date-fns";
@@ -102,7 +102,10 @@ export default function Home() {
                     <p className="line-clamp-2">{event.description}</p>
                   </CardContent>
                   <CardFooter className="flex justify-between">
-                    <p className="font-bold">${event.price.toFixed(2)}</p>
+                    <p className="font-bold flex items-center">
+                      <IndianRupee className="h-4 w-4 mr-1" />
+                      {event.price.toLocaleString('en-IN')}
+                    </p>
                     <Button 
                       variant="default" 
                       onClick={() => navigate(`/events/${event.id}`)}

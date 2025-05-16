@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { CalendarPlus, Calendar, MapPin, Search } from "lucide-react";
+import { CalendarPlus, Calendar, MapPin, Search, IndianRupee } from "lucide-react";
 import { Event, Category } from "@/models/types";
 import { eventsAPI, categoriesAPI } from "@/services/api";
 import { format } from "date-fns";
@@ -112,7 +112,7 @@ export default function Events() {
             <p className="text-muted-foreground mb-6">
               Try adjusting your search or filters to find what you're looking for.
             </p>
-            <Button onClick={() => { setSearchTerm(""); setCategoryFilter(""); }}>
+            <Button onClick={() => { setSearchTerm(""); setCategoryFilter("all"); }}>
               Clear Filters
             </Button>
           </div>
@@ -151,7 +151,10 @@ export default function Events() {
                     <p className="line-clamp-2">{event.description}</p>
                   </CardContent>
                   <CardFooter className="flex justify-between">
-                    <p className="font-bold">${event.price.toFixed(2)}</p>
+                    <p className="font-bold flex items-center">
+                      <IndianRupee className="h-4 w-4 mr-1" />
+                      {event.price.toLocaleString('en-IN')}
+                    </p>
                     <Button 
                       variant="default" 
                       onClick={() => navigate(`/events/${event.id}`)}

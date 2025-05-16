@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Calendar, MapPin, Users, Clock, DollarSign } from "lucide-react";
+import { Calendar, MapPin, Users, Clock, IndianRupee } from "lucide-react";
 import { Event, Category } from "@/models/types";
 import { eventsAPI, categoriesAPI, bookingsAPI } from "@/services/api";
 import { format } from "date-fns";
@@ -144,6 +144,8 @@ export default function EventDetail() {
   return (
     <Layout>
       <div className="container mx-auto px-4 py-8">
+        
+        
         <div className="max-w-4xl mx-auto">
           <div className="rounded-lg overflow-hidden mb-6">
             <img
@@ -188,7 +190,10 @@ export default function EventDetail() {
 
             <div>
               <div className="bg-card p-6 rounded-lg shadow-sm border">
-                <div className="mb-4 text-2xl font-bold">${event.price.toFixed(2)}</div>
+                <div className="mb-4 text-2xl font-bold flex items-center">
+                  <IndianRupee className="h-5 w-5 mr-1" />
+                  {event.price.toLocaleString('en-IN')}
+                </div>
                 
                 <div className="space-y-4 mb-6">
                   <div className="flex items-center gap-2">
@@ -196,8 +201,8 @@ export default function EventDetail() {
                     <span>Capacity: {event.capacity} attendees</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <DollarSign className="h-5 w-5 text-muted-foreground" />
-                    <span>Price per ticket: ${event.price.toFixed(2)}</span>
+                    <IndianRupee className="h-5 w-5 text-muted-foreground" />
+                    <span>Price per ticket: ₹{event.price.toLocaleString('en-IN')}</span>
                   </div>
                 </div>
                 
@@ -241,13 +246,16 @@ export default function EventDetail() {
 
             <div className="space-y-2">
               <Label>Price per Ticket</Label>
-              <Input value={`$${event.price.toFixed(2)}`} disabled />
+              <Input
+                value={`₹${event.price.toLocaleString('en-IN')}`}
+                disabled 
+              />
             </div>
 
             <div className="space-y-2">
               <Label>Total Amount</Label>
               <Input 
-                value={`$${(event.price * parseInt(ticketCount)).toFixed(2)}`} 
+                value={`₹${(event.price * parseInt(ticketCount)).toLocaleString('en-IN')}`} 
                 disabled 
                 className="font-bold"
               />
