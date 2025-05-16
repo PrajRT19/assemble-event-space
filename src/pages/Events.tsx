@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { CalendarPlus, Calendar, MapPin, Search, IndianRupee, Plus } from "lucide-react";
+import { CalendarPlus, Calendar, MapPin, Search, IndianRupee, Plus, Pencil } from "lucide-react";
 import { Event, Category } from "@/models/types";
 import { eventsAPI, categoriesAPI } from "@/services/api";
 import { format } from "date-fns";
@@ -38,8 +38,10 @@ export default function Events() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [createEventOpen, setCreateEventOpen] = useState(false);
+  const [editEventOpen, setEditEventOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [eventForm, setEventForm] = useState({
+    id: "",
     title: "",
     description: "",
     date: "",
@@ -195,17 +197,7 @@ export default function Events() {
       
       // Close the dialog and clear form
       setCreateEventOpen(false);
-      setEventForm({
-        title: "",
-        description: "",
-        date: "",
-        time: "",
-        location: "",
-        imageUrl: "",
-        capacity: "100",
-        price: "0",
-        categoryId: "1",
-      });
+      resetForm();
       
       // Add the new event to the state
       setEvents([newEvent, ...events]);
@@ -221,6 +213,93 @@ export default function Events() {
     }
   };
 
+  const handleEditEvent = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!validateForm()) {
+      return;
+    }
+    
+    setIsSubmitting(true);
+    
+    try {
+      // Combine date and time
+      const dateTime = new Date(`${eventForm.date}T${eventForm.time}`);
+      
+      const eventData = {
+        title: eventForm.title,
+        description: eventForm.description,
+        date: dateTime,
+        location: eventForm.location,
+        imageUrl: eventForm.imageUrl,
+        capacity: parseInt(eventForm.capacity),
+        price: parseFloat(eventForm.price),
+        categoryId: eventForm.categoryId,
+      };
+      
+      const updatedEvent = await eventsAPI.updateEvent(eventForm.id, eventData);
+      
+      toast({
+        title: "Event Updated",
+        description: `${eventForm.title} has been updated successfully`,
+      });
+      
+      // Close the dialog and clear form
+      setEditEventOpen(false);
+      resetForm();
+      
+      // Update the event in the state
+      setEvents(events.map(event => event.id === updatedEvent.id ? updatedEvent : event));
+    } catch (error) {
+      console.error("Failed to update event:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to update the event",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const openEditDialog = (event: Event) => {
+    // Format date and time for form inputs
+    const eventDate = new Date(event.date);
+    const date = format(eventDate, "yyyy-MM-dd");
+    const time = format(eventDate, "HH:mm");
+    
+    setEventForm({
+      id: event.id,
+      title: event.title,
+      description: event.description,
+      date: date,
+      time: time,
+      location: event.location,
+      imageUrl: event.imageUrl,
+      capacity: event.capacity.toString(),
+      price: event.price.toString(),
+      categoryId: event.categoryId,
+    });
+    
+    setEditEventOpen(true);
+  };
+
+  const resetForm = () => {
+    setEventForm({
+      id: "",
+      title: "",
+      description: "",
+      date: "",
+      time: "",
+      location: "",
+      imageUrl: "",
+      capacity: "100",
+      price: "0",
+      categoryId: "1",
+    });
+    setFormErrors({});
+  };
+
   return (
     <Layout>
       <div className="container mx-auto px-4 py-8">
@@ -231,7 +310,10 @@ export default function Events() {
           </div>
           <div className="mt-4 md:mt-0">
             <Button 
-              onClick={() => setCreateEventOpen(true)}
+              onClick={() => {
+                resetForm();
+                setCreateEventOpen(true);
+              }}
               className="flex items-center gap-2"
             >
               <Plus className="h-4 w-4" /> Add New Event
@@ -318,12 +400,24 @@ export default function Events() {
                       <IndianRupee className="h-4 w-4 mr-1" />
                       {event.price.toLocaleString('en-IN')}
                     </p>
-                    <Button 
-                      variant="default" 
-                      onClick={() => navigate(`/events/${event.id}`)}
-                    >
-                      View Details
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openEditDialog(event);
+                        }}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        variant="default" 
+                        onClick={() => navigate(`/events/${event.id}`)}
+                      >
+                        View Details
+                      </Button>
+                    </div>
                   </CardFooter>
                 </Card>
               );
@@ -495,6 +589,175 @@ export default function Events() {
               </Button>
               <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting ? "Creating..." : "Create Event"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Event Dialog */}
+      <Dialog open={editEventOpen} onOpenChange={setEditEventOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Edit Event</DialogTitle>
+            <DialogDescription>
+              Make changes to the event details below.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <form onSubmit={handleEditEvent}>
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="edit-title">Event Title</Label>
+                <Input
+                  id="edit-title"
+                  name="title"
+                  value={eventForm.title}
+                  onChange={handleInputChange}
+                  className={formErrors.title ? "border-destructive" : ""}
+                />
+                {formErrors.title && (
+                  <p className="text-sm text-destructive">{formErrors.title}</p>
+                )}
+              </div>
+              
+              <div className="grid gap-2">
+                <Label htmlFor="edit-description">Description</Label>
+                <Textarea
+                  id="edit-description"
+                  name="description"
+                  value={eventForm.description}
+                  onChange={handleInputChange}
+                  rows={3}
+                  className={formErrors.description ? "border-destructive" : ""}
+                />
+                {formErrors.description && (
+                  <p className="text-sm text-destructive">{formErrors.description}</p>
+                )}
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="edit-date">Date</Label>
+                  <Input
+                    id="edit-date"
+                    name="date"
+                    type="date"
+                    value={eventForm.date}
+                    onChange={handleInputChange}
+                    className={formErrors.date ? "border-destructive" : ""}
+                  />
+                  {formErrors.date && (
+                    <p className="text-sm text-destructive">{formErrors.date}</p>
+                  )}
+                </div>
+                
+                <div className="grid gap-2">
+                  <Label htmlFor="edit-time">Time</Label>
+                  <Input
+                    id="edit-time"
+                    name="time"
+                    type="time"
+                    value={eventForm.time}
+                    onChange={handleInputChange}
+                    className={formErrors.time ? "border-destructive" : ""}
+                  />
+                  {formErrors.time && (
+                    <p className="text-sm text-destructive">{formErrors.time}</p>
+                  )}
+                </div>
+              </div>
+              
+              <div className="grid gap-2">
+                <Label htmlFor="edit-location">Location</Label>
+                <Input
+                  id="edit-location"
+                  name="location"
+                  value={eventForm.location}
+                  onChange={handleInputChange}
+                  className={formErrors.location ? "border-destructive" : ""}
+                />
+                {formErrors.location && (
+                  <p className="text-sm text-destructive">{formErrors.location}</p>
+                )}
+              </div>
+              
+              <div className="grid gap-2">
+                <Label htmlFor="edit-imageUrl">Image URL</Label>
+                <Input
+                  id="edit-imageUrl"
+                  name="imageUrl"
+                  value={eventForm.imageUrl}
+                  onChange={handleInputChange}
+                  placeholder="https://example.com/image.jpg"
+                  className={formErrors.imageUrl ? "border-destructive" : ""}
+                />
+                {formErrors.imageUrl && (
+                  <p className="text-sm text-destructive">{formErrors.imageUrl}</p>
+                )}
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="edit-capacity">Capacity</Label>
+                  <Input
+                    id="edit-capacity"
+                    name="capacity"
+                    type="number"
+                    value={eventForm.capacity}
+                    onChange={handleInputChange}
+                    min="1"
+                    className={formErrors.capacity ? "border-destructive" : ""}
+                  />
+                  {formErrors.capacity && (
+                    <p className="text-sm text-destructive">{formErrors.capacity}</p>
+                  )}
+                </div>
+                
+                <div className="grid gap-2">
+                  <Label htmlFor="edit-price">Price (₹)</Label>
+                  <Input
+                    id="edit-price"
+                    name="price"
+                    type="number"
+                    value={eventForm.price}
+                    onChange={handleInputChange}
+                    min="0"
+                    step="0.01"
+                    className={formErrors.price ? "border-destructive" : ""}
+                  />
+                  {formErrors.price && (
+                    <p className="text-sm text-destructive">{formErrors.price}</p>
+                  )}
+                </div>
+                
+                <div className="grid gap-2">
+                  <Label htmlFor="edit-category">Category</Label>
+                  <Select 
+                    value={eventForm.categoryId} 
+                    onValueChange={(value) => handleSelectChange("categoryId", value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories.map((category) => (
+                        <SelectItem key={category.id} value={category.id}>
+                          {category.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+            
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setEditEventOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? "Updating..." : "Update Event"}
               </Button>
             </DialogFooter>
           </form>
