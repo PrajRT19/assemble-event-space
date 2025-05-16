@@ -1,6 +1,7 @@
 
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
+import { useEffect } from "react";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -9,6 +10,11 @@ interface ProtectedRouteProps {
 
 export function ProtectedRoute({ children, adminOnly = false }: ProtectedRouteProps) {
   const { isAuthenticated, isAdmin, loading } = useAuth();
+  
+  // Add logging to debug auth state
+  useEffect(() => {
+    console.log("ProtectedRoute auth state:", { isAuthenticated, isAdmin, loading });
+  }, [isAuthenticated, isAdmin, loading]);
   
   if (loading) {
     return (
@@ -19,10 +25,12 @@ export function ProtectedRoute({ children, adminOnly = false }: ProtectedRoutePr
   }
   
   if (!isAuthenticated) {
+    console.log("User not authenticated, redirecting to login");
     return <Navigate to="/login" />;
   }
   
   if (adminOnly && !isAdmin) {
+    console.log("User not admin, redirecting to home");
     return <Navigate to="/" />;
   }
   

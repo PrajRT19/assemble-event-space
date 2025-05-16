@@ -2,6 +2,7 @@
 // Fix the TypeScript errors related to missing password property
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, AuthState } from '@/models/types';
+import { toast } from "sonner";
 
 interface AuthContextProps extends AuthState {
   login: (email: string, password: string) => Promise<void>;
@@ -26,22 +27,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const token = localStorage.getItem('authToken');
         
         if (token) {
-          // Mock user data - In a real app, you would verify the token with your backend
-          // and get the user data
-          const user: User = {
-            id: '1',
-            name: 'John Doe',
-            email: 'john@example.com',
-            role: 'admin',
-            password: '', // Added password property to fix TypeScript error
-            createdAt: new Date(),
-          };
+          // Get stored user data if available
+          const storedUserData = localStorage.getItem('userData');
           
-          setAuthState({
-            user,
-            isAuthenticated: true,
-            loading: false,
-          });
+          if (storedUserData) {
+            const userData = JSON.parse(storedUserData);
+            
+            // Mock user data - In a real app, you would verify the token with your backend
+            const user: User = {
+              id: userData.id || '1',
+              name: userData.name || 'John Doe',
+              email: userData.email || 'john@example.com',
+              role: userData.role || 'admin',
+              password: '', // Added password property to fix TypeScript error
+              createdAt: new Date(userData.createdAt) || new Date(),
+            };
+            
+            setAuthState({
+              user,
+              isAuthenticated: true,
+              loading: false,
+            });
+            
+            console.log("Auth status checked, user is authenticated:", user.email);
+          } else {
+            // Token exists but no user data, clear token as it might be invalid
+            localStorage.removeItem('authToken');
+            setAuthState({
+              user: null,
+              isAuthenticated: false,
+              loading: false,
+            });
+          }
         } else {
           setAuthState({
             user: null,
@@ -51,6 +68,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       } catch (error) {
         console.error('Auth status check failed:', error);
+        // Clear potentially corrupted data
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('userData');
         setAuthState({
           user: null,
           isAuthenticated: false,
@@ -80,13 +100,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Save token to localStorage
       localStorage.setItem('authToken', 'mock-token');
       
+      // Also save user data to localStorage
+      localStorage.setItem('userData', JSON.stringify(user));
+      
       setAuthState({
         user,
         isAuthenticated: true,
         loading: false,
       });
+      
+      toast.success("Login successful!");
+      console.log("Login successful for:", email);
     } catch (error) {
       console.error('Login failed:', error);
+      toast.error("Login failed. Please check your credentials.");
       throw new Error('Login failed. Please check your credentials.');
     }
   };
@@ -108,20 +135,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Save token to localStorage
       localStorage.setItem('authToken', 'mock-token');
       
+      // Also save user data to localStorage
+      localStorage.setItem('userData', JSON.stringify(user));
+      
       setAuthState({
         user,
         isAuthenticated: true,
         loading: false,
       });
+      
+      toast.success("Registration successful!");
     } catch (error) {
       console.error('Registration failed:', error);
+      toast.error("Registration failed. Please try again.");
       throw new Error('Registration failed. Please try again.');
     }
   };
 
   const logout = () => {
-    // Remove token from localStorage
+    // Remove token and user data from localStorage
     localStorage.removeItem('authToken');
+    localStorage.removeItem('userData');
     
     // Reset auth state
     setAuthState({
@@ -129,6 +163,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isAuthenticated: false,
       loading: false,
     });
+    
+    toast.info("Logged out successfully");
   };
 
   // Additional helper for checking admin status
