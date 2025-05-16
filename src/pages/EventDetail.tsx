@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -61,7 +60,7 @@ export default function EventDetail() {
         });
       } finally {
         setLoading(false);
-      }
+        }
     };
 
     fetchEventDetails();

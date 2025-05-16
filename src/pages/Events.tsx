@@ -23,7 +23,7 @@ export default function Events() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("all");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -59,7 +59,7 @@ export default function Events() {
     }
     
     // Filter by category
-    if (categoryFilter) {
+    if (categoryFilter && categoryFilter !== "all") {
       filtered = filtered.filter(event => event.categoryId === categoryFilter);
     }
     
@@ -91,7 +91,7 @@ export default function Events() {
               <SelectValue placeholder="Filter by category" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Categories</SelectItem>
+              <SelectItem value="all">All Categories</SelectItem>
               {categories.map((category) => (
                 <SelectItem key={category.id} value={category.id}>
                   {category.name}
