@@ -1,6 +1,4 @@
-
-// Fix the TypeScript errors related to missing password property
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useState, useEffect, ReactNode } from 'react';
 import { User, AuthState } from '@/models/types';
 import { toast } from "sonner";
 
@@ -11,7 +9,8 @@ interface AuthContextProps extends AuthState {
   isAdmin: boolean;
 }
 
-const AuthContext = createContext<AuthContextProps | undefined>(undefined);
+// Export the AuthContext
+export const AuthContext = createContext<AuthContextProps | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [authState, setAuthState] = useState<AuthState>({

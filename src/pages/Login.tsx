@@ -1,7 +1,7 @@
 
-import React, { useState, useContext } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { AuthContext } from "@/context/AuthContext";
+import { useAuth } from "@/hooks/useAuth";
 import { authAPI } from "@/services/api";
 import {
   Card,
@@ -29,7 +29,7 @@ export function Login() {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const { login } = useContext(AuthContext);
+  const { login } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -37,8 +37,11 @@ export function Login() {
     setIsLoading(true);
     
     try {
-      const user = await authAPI.login(email, password, loginType);
-      login(email, password);
+      // First call the API
+      await authAPI.login(email, password);
+      
+      // Then use the context login function with email and password
+      await login(email, password);
       
       if (loginType === 'admin') {
         navigate("/admin/dashboard");
