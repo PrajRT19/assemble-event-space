@@ -1,6 +1,7 @@
+
 import React, { useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
-import { AuthContext } from "@/contexts/AuthContext";
+import { AuthContext } from "@/context/AuthContext";
 import { authAPI } from "@/services/api";
 import {
   Card,
@@ -37,10 +38,10 @@ export function Login() {
     
     try {
       const user = await authAPI.login(email, password, loginType);
-      login(user);
+      login(email, password);
       
       if (loginType === 'admin') {
-        navigate("/admin");
+        navigate("/admin/dashboard");
       } else {
         navigate("/dashboard");
       }

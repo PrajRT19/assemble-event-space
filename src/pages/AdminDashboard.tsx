@@ -1,121 +1,83 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/hooks/useAuth";
-import { Button } from "@/components/ui/button";
+
+import React, { useEffect } from "react";
+import { useAuth } from "@/context/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "lucide-react";
 import { EventList } from "@/components/dashboard/EventList";
 import { BookingList } from "@/components/dashboard/BookingList";
-import { EventAnalytics } from "@/components/dashboard/EventAnalytics";
 import { dbAPI } from "@/services/api";
-import { Calendar } from "lucide-react";
 
 export default function AdminDashboard() {
   const { user } = useAuth();
-  const navigate = useNavigate();
-  const [dbStatus, setDbStatus] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-
+  const [dbStatus, setDbStatus] = React.useState(null);
+  
   useEffect(() => {
-    // Redirect if not admin
-    if (user && user.role !== "admin") {
-      navigate("/dashboard");
-    }
-
-    // Fetch database status
     const fetchDbStatus = async () => {
       try {
         const status = await dbAPI.getConnectionStatus();
         setDbStatus(status);
       } catch (error) {
         console.error("Failed to fetch DB status:", error);
-      } finally {
-        setLoading(false);
       }
     };
-
+    
     fetchDbStatus();
-  }, [user, navigate]);
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent"></div>
-      </div>
-    );
-  }
+  }, []);
 
   return (
-    <div className="container mx-auto py-10">
-      <h1 className="text-3xl font-bold mb-6">Admin Dashboard</h1>
+    <div className="container mx-auto py-8">
+      <div className="flex flex-col md:flex-row justify-between items-center mb-8">
+        <div>
+          <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+          <p className="text-muted-foreground">Welcome back, {user?.name || "Administrator"}</p>
+        </div>
+        <Button className="mt-4 md:mt-0">
+          <Calendar className="mr-2 h-4 w-4" /> Create Event
+        </Button>
+      </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+      <div className="grid gap-6 mb-8">
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Database Status</CardTitle>
+          <CardHeader>
+            <CardTitle>Database Status</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {dbStatus?.connected ? (
-                <span className="text-green-500">Connected</span>
-              ) : (
-                <span className="text-red-500">Disconnected</span>
-              )}
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Database: {dbStatus?.dbName || "N/A"}
-            </p>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Total Events</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {dbStatus?.collections?.find((c: any) => c.name === "events")?.count || 0}
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Active events in the system
-            </p>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Total Bookings</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {dbStatus?.collections?.find((c: any) => c.name === "bookings")?.count || 0}
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Bookings across all events
-            </p>
+            {dbStatus ? (
+              <div className="grid gap-2">
+                <div className="flex justify-between">
+                  <span className="font-medium">Connection:</span>
+                  <span className={dbStatus.connected ? "text-green-600" : "text-red-600"}>
+                    {dbStatus.connected ? "Connected" : "Disconnected"}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="font-medium">Database:</span>
+                  <span>{dbStatus.dbName}</span>
+                </div>
+                <div className="grid gap-1 mt-2">
+                  <span className="font-medium">Collections:</span>
+                  {dbStatus.collections?.map(collection => (
+                    <div key={collection.name} className="flex justify-between pl-4 text-sm">
+                      <span>{collection.name}</span>
+                      <span>{collection.count} records</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="flex justify-center py-4">
+                <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary"></div>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
       
-      <EventAnalytics />
-      
-      <Tabs defaultValue="events" className="mt-6">
-        <TabsList>
-          <TabsTrigger value="events">Manage Events</TabsTrigger>
-          <TabsTrigger value="bookings">Manage Bookings</TabsTrigger>
-        </TabsList>
-        <TabsContent value="events" className="mt-6">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold">All Events</h2>
-            <Button onClick={() => navigate("/events/create")}>Create Event</Button>
-          </div>
-          <EventList isAdmin={true} />
-        </TabsContent>
-        <TabsContent value="bookings" className="mt-6">
-          <h2 className="text-xl font-semibold mb-4">All Bookings</h2>
-          <BookingList isAdmin={true} />
-        </TabsContent>
-      </Tabs>
+      <div className="grid md:grid-cols-2 gap-6">
+        <EventList />
+        <BookingList />
+      </div>
     </div>
   );
 }
