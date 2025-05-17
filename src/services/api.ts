@@ -1,5 +1,6 @@
 
 import { User, Event, Booking, Notification, Category } from "../models/types";
+import { mongoConfig } from "../config/db";
 
 // Mock data
 let users: User[] = [
@@ -139,15 +140,30 @@ const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 // Auth API
 export const authAPI = {
-  login: async (email: string, password: string) => {
+  login: async (email: string, password: string, loginType: 'user' | 'admin' = 'user') => {
     await delay(800);
-    const user = users.find(u => u.email === email && u.password === password);
-    if (!user) {
-      throw new Error("Invalid credentials");
+    
+    if (loginType === 'admin') {
+      // Only allow users with admin role
+      const adminUser = users.find(u => u.email === email && u.password === password && u.role === 'admin');
+      if (!adminUser) {
+        throw new Error("Invalid admin credentials");
+      }
+      // Don't send password to front end
+      const { password: _, ...userWithoutPassword } = adminUser;
+      console.log("Logging in as admin:", userWithoutPassword);
+      return { ...userWithoutPassword };
+    } else {
+      // Regular user login (can be admin or customer)
+      const user = users.find(u => u.email === email && u.password === password);
+      if (!user) {
+        throw new Error("Invalid credentials");
+      }
+      // Don't send password to front end
+      const { password: _, ...userWithoutPassword } = user;
+      console.log("Logging in as regular user:", userWithoutPassword);
+      return { ...userWithoutPassword };
     }
-    // Don't send password to front end
-    const { password: _, ...userWithoutPassword } = user;
-    return { ...userWithoutPassword };
   },
   register: async (name: string, email: string, password: string, role: 'customer' = 'customer') => {
     await delay(800);
@@ -167,6 +183,24 @@ export const authAPI = {
     const { password: _, ...userWithoutPassword } = newUser;
     return { ...userWithoutPassword };
   },
+};
+
+// MongoDB Connection Info for Frontend
+export const dbAPI = {
+  getConnectionStatus: async () => {
+    await delay(300);
+    // This is a placeholder - in a real app this would check the MongoDB connection
+    return { 
+      connected: true,
+      dbName: mongoConfig.uri.split('/').pop(),
+      collections: [
+        { name: 'users', count: users.length },
+        { name: 'events', count: events.length },
+        { name: 'bookings', count: bookings.length },
+        { name: 'categories', count: categories.length },
+      ]
+    };
+  }
 };
 
 // Events API

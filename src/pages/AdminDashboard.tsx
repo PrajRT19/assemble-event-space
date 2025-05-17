@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Calendar, Plus, FileText, Users, CalendarCheck, Bell } from "lucide-react";
+import { Plus, FileText, Users, CalendarCheck, Bell } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { eventsAPI, bookingsAPI } from "@/services/api";
 import { Event, Booking } from "@/models/types";
@@ -36,7 +36,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { EventAnalytics } from "@/components/dashboard/EventAnalytics";
 
+// Keep existing BookingWithUser type definition
 type BookingWithUser = Booking & {
   user: {
     id: string;
@@ -285,6 +287,11 @@ export default function AdminDashboard() {
               Create Event
             </Button>
           </div>
+        </div>
+
+        {/* Analytics Component */}
+        <div className="mb-8">
+          <EventAnalytics />
         </div>
 
         {/* Stats Cards */}

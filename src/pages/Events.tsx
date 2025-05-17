@@ -1,10 +1,9 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { CalendarPlus, Calendar, MapPin, Search, IndianRupee, Plus, Pencil } from "lucide-react";
+import { CalendarPlus, Calendar, MapPin, Search, IndianRupee, Plus, Pencil, Trash2 } from "lucide-react";
 import { Event, Category } from "@/models/types";
 import { eventsAPI, categoriesAPI } from "@/services/api";
 import { format } from "date-fns";
@@ -27,6 +26,17 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useAuth } from "@/context/AuthContext";
 
 export default function Events() {
   const [events, setEvents] = useState<Event[]>([]);
@@ -37,8 +47,11 @@ export default function Events() {
   const [categoryFilter, setCategoryFilter] = useState("all");
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { isAdmin } = useAuth();
   const [createEventOpen, setCreateEventOpen] = useState(false);
   const [editEventOpen, setEditEventOpen] = useState(false);
+  const [deleteEventId, setDeleteEventId] = useState<string | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [eventForm, setEventForm] = useState({
     id: "",
@@ -300,6 +313,43 @@ export default function Events() {
     setFormErrors({});
   };
 
+  // New function to handle event deletion
+  const confirmDeleteEvent = (eventId: string) => {
+    setDeleteEventId(eventId);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteEvent = async () => {
+    if (!deleteEventId) return;
+    
+    setIsSubmitting(true);
+    
+    try {
+      await eventsAPI.deleteEvent(deleteEventId);
+      
+      toast({
+        title: "Event Deleted",
+        description: "The event has been deleted successfully",
+      });
+      
+      // Remove the event from the state
+      const updatedEvents = events.filter(event => event.id !== deleteEventId);
+      setEvents(updatedEvents);
+      
+    } catch (error) {
+      console.error("Failed to delete event:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to delete the event",
+      });
+    } finally {
+      setIsSubmitting(false);
+      setDeleteDialogOpen(false);
+      setDeleteEventId(null);
+    }
+  };
+
   return (
     <Layout>
       <div className="container mx-auto px-4 py-8">
@@ -309,15 +359,17 @@ export default function Events() {
             <p className="text-muted-foreground">Discover and book upcoming events</p>
           </div>
           <div className="mt-4 md:mt-0">
-            <Button 
-              onClick={() => {
-                resetForm();
-                setCreateEventOpen(true);
-              }}
-              className="flex items-center gap-2"
-            >
-              <Plus className="h-4 w-4" /> Add New Event
-            </Button>
+            {isAdmin && (
+              <Button 
+                onClick={() => {
+                  resetForm();
+                  setCreateEventOpen(true);
+                }}
+                className="flex items-center gap-2"
+              >
+                <Plus className="h-4 w-4" /> Add New Event
+              </Button>
+            )}
           </div>
         </div>
 
@@ -401,16 +453,30 @@ export default function Events() {
                       {event.price.toLocaleString('en-IN')}
                     </p>
                     <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          openEditDialog(event);
-                        }}
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
+                      {isAdmin && (
+                        <>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openEditDialog(event);
+                            }}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              confirmDeleteEvent(event.id);
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </>
+                      )}
                       <Button 
                         variant="default" 
                         onClick={() => navigate(`/events/${event.id}`)}
@@ -763,6 +829,28 @@ export default function Events() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Event Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the event and remove all associated data.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteEvent}
+              disabled={isSubmitting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isSubmitting ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Layout>
   );
 }
