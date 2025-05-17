@@ -4,7 +4,7 @@
 export const mongoConfig = {
   // Replace with your actual MongoDB connection string
   // Will be used when integrating with real MongoDB
-  uri: process.env.MONGODB_URI || "mongodb://localhost:27017/events_db",
+  uri: import.meta.env.VITE_MONGODB_URI || "mongodb://localhost:27017/events_db",
   options: {
     useNewUrlParser: true,
     useUnifiedTopology: true
